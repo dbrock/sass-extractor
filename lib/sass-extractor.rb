@@ -6,28 +6,38 @@ class SassExtractor
     @options = options
   end
 
-  def get_rules(file_name)
-    Extractor.new(sass_tree_for_file(file_name)).get_rules(prefixes)
-  end
+  def sass_options
+    @options[:sass_options] end
+  def prefixes
+    @options[:prefixes] || [""] end
 
-  def sass_tree_for_file(file_name)
-    Sass::Engine.for_file(file_name, sass_options).to_tree
-  end
+  def from_file(filename)
+    from_tree(tree_from_filename(filename)) end
+  def from_string(string)
+    from_tree(tree_from_string(string)) end
 
-  def sass_options; @options[:sass_options] end
-  def prefixes; @options[:prefixes] || [""] end
+private
+
+  def tree_from_filename(filename)
+    Sass::Engine.for_file(filename, sass_options).to_tree end
+  def tree_from_string(input)
+    Sass::Engine.new(input, sass_options).to_tree end
+
+  def from_tree(tree)
+    Extractor.new(tree).get_rules(prefixes)
+  end
 
   class Extractor
     def initialize(tree)
       @tree = tree
-      compile
+      compile!
     end
 
     def get_rules(prefixes)
       Visitor.visit(@tree, prefixes)
     end
 
-    def compile
+    def compile!
       check_nesting
       @tree = Sass::Tree::Visitors::Perform.visit(@tree)
       check_nesting
